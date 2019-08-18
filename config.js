@@ -1,3 +1,8 @@
+const dotenv = require('dotenv');
+
+// load .env files into proces.ENV for development
+dotenv.config();
+
 module.exports = {
   // your community or team name to display on join page.
   community: process.env.COMMUNITY_NAME || 'YOUR-TEAM-NAME',
@@ -18,5 +23,12 @@ module.exports = {
   recaptchaSecretKey: process.env.RECAPTCHA_SECRET || null,
   // default locale
   locale: process.env.LOCALE || "en",
-  subpath: process.env.SUBPATH || "/"
+  subpath: process.env.SUBPATH || "/",
+  // approval: send requests to someone for approval
+  approvalNeeded: process.env.APPROVAL_NEEDED || false,
+  approver: process.env.APPROVER || null,
+  // database connection string
+  db: {
+    pgConnectionString: process.env.DATABASE_URL || null
+  }
 };
