@@ -1,28 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const request = require('request');
-import uuidv4 from 'uuid/v4';
-const { Pool } = require('pg');
-
-const sendgrid = require('sendgrid');
-
-const winston = require('winston')
-const myWinstonOptions = {
-    transports: [new winston.transports.Console()]
-}
 
 const config = require('../config');
 const { badge } = require('../lib/badge');
+const DB = require('../db');
+const Email = require('../email');
 
 const sanitize = require('sanitize');
-
-const logger = new winston.createLogger(myWinstonOptions)
-
-const from_email = new sendgrid.mail.Email(config.email.from);
-const to_email = new sendgrid.mail.Email(config.approver);
-const subject = `A new user wants to join ${config.community}`;
-
-const sg = sendgrid(config.sendgrid_api_key);
 
 router.get('/', function(req, res) {
   res.setLocale(config.locale);
@@ -31,33 +16,10 @@ router.get('/', function(req, res) {
                         recaptchaSiteKey: config.recaptchaSiteKey });
 });
 
-const pool = config.db.pgConnectionString ? new Pool(config.db) : null;
-
-if (pool) {
-  pool.on('connect', () => {
-    logger.info('connected to the db');
-  });
-}
-
-function createTables() {
-  const queryText =
-    'CREATE TABLE IF NOT EXISTS invitations (id UUID PRIMARY KEY, email_address TEXT NOT NULL)';
-
-  pool.query(queryText)
-    .then((res) => {
-      console.log(res);
-      pool.end();
-    })
-    .catch((err) => {
-      logger.error(err);
-      pool.end();
-    });
-}
-
 function inviteUser(emailAddress, cb, token) {
-  if (!token && !!config.approvalNeeded && !!config.approver) {
-    storeEmailAddress(emailAddress)
-      .then(sendMessageToApprover)
+  if (!token && !!config.approvalNeeded) {
+    DB.storeEmailAddress(emailAddress)
+      .then(Email.sendMessageToApprover)
       .then(function () {
         cb(null, { ok: false, error: 'approval_needed' });
       } function(e) {
@@ -65,10 +27,10 @@ function inviteUser(emailAddress, cb, token) {
       });
   } else {
     if (token) {
-      removeInvite(token).then(() => {
-        logger.info(`removed invitation for ${emailAddress}`)
+      DB.removeInvite(token).then(() => {
+        DB.logger.info(`removed invitation for ${emailAddress}`)
       }, (e) => {
-        logger.error(`error removing invitation for ${emailAddress}`);
+        DB.logger.error(`error removing invitation for ${emailAddress}`);
       });
     }
     const options = {
@@ -94,7 +56,7 @@ function inviteUser(emailAddress, cb, token) {
 }
 
 router.get('/approve/:token', function(req, res) {
-  findInvite(req.params.token)
+  DB.findInvite(req.params.token)
    .then(sendInvitation)
    .then(function (invitation) {
      res.render('result', {
@@ -108,61 +70,6 @@ router.get('/approve/:token', function(req, res) {
      });
    });
 });
-
-function storeEmailAddress(emailAddress) {
-  const sql = `INSERT INTO invitations (id, email_address) VALUES ($1, $2) returning id`;
-  const values = [uuidv4(), emailAddress];
-
-  return pool.query(sql, values)
-    .then(rows => { {emailAddress, token: rows[0].id} });
-};
-function findInvite(token) {
-  const sql = `SELECT id, email_address FROM invitations WHERE id = $1 LIMIT 1`;
-  const values = [token];
-
-  return pool.query(sql, values)
-    .then(rows => { {emailAddress, token: rows[0]} });
-};
-function removeInvite(token) {
-  const sql = `DELETE FROM invitations WHERE id = $1`;
-  const values = [token];
-
-  return pool.query(sql, values);
-};
-
-
-function sendMessageToApprover(invitation) {
-  const html = `
-    <h1>New request to join ${config.community}</h1>
-
-    <p>
-    We have received a new request to join ${config.community} on Slack.
-    If you would like to approve this request, pease click on the link below:
-    </p>
-
-    <a class="approval-link" href="${approvalLink(invitation)}">
-      Invite ${invitation.emailAddress} to join ${config.community}
-    </a>
-  `;
-  const content = new sendgrid.mail.Content('text/html', html);
-  const mail = new sendgrid.mail.Mail(from_email, subject, to_email, content);
-
-  const request = sendgrid.emptyRequest({
-    method: 'POST',
-    path: '/v3/mail/send',
-    body: mail.toJSON(),
-  });
-
-  return new Promise((resolve, reject) => {
-    sendgrid.API(request, function(error, response) {
-      if (error) {
-        return reject(error)
-      } else {
-        return resolve(response)
-      }
-    });
-  });
-};
 
 function sendInvitation(invitation) {
   return new Promise((resolve, reject) => {
@@ -184,7 +91,6 @@ function sendInvitation(invitation) {
     inviteUser(invitation.emailAddress, cb, invitation.id);
   });
 };
-
 
 router.post('/invite', function(req, res) {
   if (req.body.email && (!config.inviteToken || (!!config.inviteToken && req.body.token === config.inviteToken))) {

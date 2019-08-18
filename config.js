@@ -26,9 +26,13 @@ module.exports = {
   subpath: process.env.SUBPATH || "/",
   // approval: send requests to someone for approval
   approvalNeeded: process.env.APPROVAL_NEEDED || false,
-  approver: process.env.APPROVER || null,
   // database connection string
   db: {
-    pgConnectionString: process.env.DATABASE_URL || null
+    connectionString: process.env.DATABASE_URL || null
+  },
+  email: {
+    from: process.env.EMAIL_FROM || null,
+    approver: process.env.EMAIL_APPROVER || null,
+    sendgrid_api_key: process.env.SENDGRID_API_KEY || null
   }
 };
