@@ -1,7 +1,7 @@
-const config = require('../config');
+const config = require('./config');
 
 const winston = require('winston')
-import uuidv4 from 'uuid/v4';
+const uuidv4 = require('uuid/v4');
 const { Pool } = require('pg');
 
 const myWinstonOptions = {
@@ -14,22 +14,30 @@ const pool = config.db.connectionString && new Pool(config.db);
 
 if (pool) {
   pool.on('connect', () => {
-    logger.info('connected to the db');
+    logger.info('Connected to database established');
+  });
+  pool.on('error', (err, client) => {
+    logger.error('Unexpected error on idle client', err)
+    process.exit(-1)
+  });
+  pool.connect().then(createTables).catch(e => {
+    logger.error('Could not create tables');
+    process.exit(1);
   });
 }
 
-function createTables() {
+function createTables(client) {
   const queryText =
     'CREATE TABLE IF NOT EXISTS invitations (id UUID PRIMARY KEY, email_address TEXT NOT NULL)';
 
-  pool.query(queryText)
+  return client.query(queryText)
     .then((res) => {
+      client.release();
       console.log(res);
-      pool.end();
     })
     .catch((err) => {
+      client.release();
       logger.error(err);
-      pool.end();
     });
 }
 
@@ -38,15 +46,19 @@ function storeEmailAddress(emailAddress) {
   const values = [uuidv4(), emailAddress];
 
   return pool.query(sql, values)
-    .then(rows => { {emailAddress, token: rows[0].id} });
+      .then(res => {
+        token = res.rows[0].id;
+        return { emailAddress, token };
+      });
 };
+
 function findInvite(token) {
-  const sql = `SELECT id, email_address FROM invitations WHERE id = $1 LIMIT 1`;
+  const sql = `SELECT id AS token, email_address FROM invitations WHERE id = $1 LIMIT 1`;
   const values = [token];
 
-  return pool.query(sql, values)
-    .then(rows => { {emailAddress, token: rows[0]} });
+  return pool.query(sql, values).then(res => res.rows[0]);
 };
+
 function removeInvite(token) {
   const sql = `DELETE FROM invitations WHERE id = $1`;
   const values = [token];

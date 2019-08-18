@@ -1,4 +1,4 @@
-const config = require('./config');
+const config = require('../config');
 
 function getBody(invitation) {
   const html = `
@@ -17,8 +17,8 @@ function getBody(invitation) {
   return html;
 }
 
-if (config.email.sendgrid_api_key) {
-  module.exports = require('./email/sendgrid')(getBody);
-} else if (config.email.gmail_credentials_file) {
-  module.exports = require('./email/gmail')(getBody);
+function approvalLink(invitation) {
+  return `${config.baseURL}/approve/${invitation.token}`;
 }
+
+module.exports = { approvalLink, getBody };

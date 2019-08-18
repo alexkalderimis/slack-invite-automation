@@ -1,13 +1,15 @@
 const config = require('../config')
 const sendgrid = require('sendgrid');
 
+const {getBody} = require('./common');
+
 const from_email = new sendgrid.mail.Email(config.email.from);
 const to_email = new sendgrid.mail.Email(config.email.approver);
 const subject = `A new user wants to join ${config.community}`;
 
 const sg = sendgrid(config.email.sendgrid_api_key);
 
-function sendMessageToApprover(getBody, invitation) {
+function sendMessageToApprover(invitation) {
   const html = getBody(invitation)
   const content = new sendgrid.mail.Content('text/html', html);
   const mail = new sendgrid.mail.Mail(from_email, subject, to_email, content);
@@ -29,4 +31,4 @@ function sendMessageToApprover(getBody, invitation) {
   });
 };
 
-module.exports = (getBody) => { sendMessageToApprover: sendMessageToApprover.bind(null, getBody) };
+module.exports = { sendMessageToApprover };

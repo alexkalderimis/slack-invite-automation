@@ -5,7 +5,7 @@ const request = require('request');
 const config = require('../config');
 const { badge } = require('../lib/badge');
 const DB = require('../db');
-const Email = require('../email');
+const Approve = require('../approve');
 
 const sanitize = require('sanitize');
 
@@ -16,13 +16,15 @@ router.get('/', function(req, res) {
                         recaptchaSiteKey: config.recaptchaSiteKey });
 });
 
+const approvalNeeded = !!config.approvalMechanism;
+
 function inviteUser(emailAddress, cb, token) {
-  if (!token && !!config.approvalNeeded) {
-    DB.storeEmailAddress(emailAddress)
-      .then(Email.sendMessageToApprover)
+  if (!token && approvalNeeded) {
+    return DB.storeEmailAddress(emailAddress)
+      .then(Approve.sendMessageToApprover)
       .then(function () {
         cb(null, { ok: false, error: 'approval_needed' });
-      } function(e) {
+      }, function(e) {
         cb(e, null);
       });
   } else {
@@ -51,13 +53,29 @@ function inviteUser(emailAddress, cb, token) {
         } catch (e) {
           cb(new Error(e), null)
         }
+      }
     });
   }
 }
 
 router.get('/approve/:token', function(req, res) {
-  DB.findInvite(req.params.token)
-   .then(sendInvitation)
+  DB.findInvite(req.params.token).then(invitation => {
+    if (invitation) {
+      res.render('approve', { ...config, invitation });
+    } else {
+      res.status(404).send('not found');
+    }
+  }).catch(e => {
+     res.render('result', { community: config.community, message: 'Failed! ' + e });
+  });
+});
+
+router.post('/approve/:token', function(req, res) {
+  DB.findInvite(req.params.token).then(invitation => {
+     if (!invitation) return res.status(404).send('Not found');
+
+     return sendInvitation(invitation);
+   })
    .then(function (invitation) {
      res.render('result', {
        community: config.community,
@@ -83,12 +101,12 @@ function sendInvitation(invitation) {
       } else if (response.error === 'invalid_email') {
         return reject(new Error('The email address is invalid'));
       } else if (response.error === 'invalid_auth') {
-        return reject(new Error('The request was not authorised. Please check your configuration settings');
+        return reject(new Error('The request was not authorised. Please check your configuration settings'));
       } else { 
         return reject(new Error(response.error));
       }
     };
-    inviteUser(invitation.emailAddress, cb, invitation.id);
+    inviteUser(invitation.email_address, cb, invitation.token);
   });
 };
 
@@ -108,6 +126,8 @@ router.post('/invite', function(req, res) {
             });
           } else {
             let error = body.error;
+            let message = error;
+            let isFailed = true;
             if (error === 'already_invited' || error === 'already_in_team') {
               res.render('result', {
                 community: config.community,
@@ -116,16 +136,16 @@ router.post('/invite', function(req, res) {
               });
               return;
             } else if (error === 'invalid_email') {
-              error = 'The email you entered is an invalid email.';
+              message = 'Failed: The email you entered is an invalid email.';
+            } else if (error === 'approval_needed') {
+              message = 'Your invitation is waiting to be approved.';
+              isFailed = false;
             } else if (error === 'invalid_auth') {
-              error = 'Something has gone wrong. Please contact a system administrator.';
+              DB.logger.error(body);
+              message = 'Error: Something has gone wrong. Please contact a system administrator.';
             }
 
-            res.render('result', {
-              community: config.community,
-              message: 'Failed! ' + error,
-              isFailed: true
-            });
+            res.render('result', { ...config, message, isFailed });
           }
         });
     }

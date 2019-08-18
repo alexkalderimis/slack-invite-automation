@@ -5,13 +5,10 @@ const {google} = require('googleapis');
 const fs = require('fs');
 const readline = require('readline');
 
-const gmail = google.gmail({
-  version: 'v1',
-  auth: sampleClient.oAuth2Client,
-});
+const {getBody} = require('./common');
 
 const from_email = config.email.from;
-const to_email = config.email.approver;
+const to_email = config.approver;
 const subject = `A new user wants to join ${config.community}`;
 const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
 
@@ -27,7 +24,7 @@ const scopes = [
 // This module is only really meant to be used for local testing.
 // To authorize the client you will first need to run 'authorize'
 
-function sendMessageToApprover(getBody, invitation) {
+function sendMessageToApprover(invitation) {
   const messageParts = [
       `From: ${from_email}`,
       `To: ${to_email}`,
@@ -121,7 +118,7 @@ function getNewToken(oAuth2Client) {
   });
 }
 
-module.exports = (getBody) => {
-  sendMessageToApprover: sendMessageToApprover.bind(null, getBody),
-  authorize: () => getClient().then(() => console.log('Successfully authorized'))
+module.exports = {
+  sendMessageToApprover,
+  authorize: () => getClient().then(() => console.log('Successfully authorized')).catch(e => console.error(e))
 };
