@@ -1,14 +1,6 @@
-const config = require('../config');
+const config = require('./config');
 
-const sendgrid = require('sendgrid');
-
-const from_email = new sendgrid.mail.Email(config.email.from);
-const to_email = new sendgrid.mail.Email(config.email.approver);
-const subject = `A new user wants to join ${config.community}`;
-
-const sg = sendgrid(config.email.sendgrid_api_key);
-
-function sendMessageToApprover(invitation) {
+function getBody(invitation) {
   const html = `
     <h1>New request to join ${config.community}</h1>
 
@@ -21,24 +13,12 @@ function sendMessageToApprover(invitation) {
       Invite ${invitation.emailAddress} to join ${config.community}
     </a>
   `;
-  const content = new sendgrid.mail.Content('text/html', html);
-  const mail = new sendgrid.mail.Mail(from_email, subject, to_email, content);
 
-  const request = sg.emptyRequest({
-    method: 'POST',
-    path: '/v3/mail/send',
-    body: mail.toJSON(),
-  });
+  return html;
+}
 
-  return new Promise((resolve, reject) => {
-    sg.API(request, function(error, response) {
-      if (error) {
-        return reject(error)
-      } else {
-        return resolve(response)
-      }
-    });
-  });
-};
-
-module.exports = { sendMessageToApprover };
+if (config.email.sendgrid_api_key) {
+  module.exports = require('./email/sendgrid')(getBody);
+} else if (config.email.gmail_credentials_file) {
+  module.exports = require('./email/gmail')(getBody);
+}
