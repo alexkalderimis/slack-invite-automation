@@ -26,6 +26,7 @@ function inviteUser(emailAddress, cb, token) {
           return Promise.reject('Invitation is still pending');
         } else {
           return DB.storeEmailAddress(emailAddress);
+        }
       })
       .then(Approve.sendMessageToApprover)
       .then(function () {
@@ -80,20 +81,29 @@ router.post('/approve/:token', function(req, res) {
   DB.findInvite(req.params.token).then(invitation => {
      if (!invitation) return res.status(404).send('Not found');
 
-     return sendInvitation(invitation);
+     if (req.body.approved === 'Approve') {
+       return approveInvitation(invitation);
+     } else {
+       return rejectInvitation(invitation);
+     }
    })
-   .then(function (invitation) {
-     res.render('result', {
-       community: config.community,
-       message: 'Approved! An invitation has been sent to &ldquo;' + invitation.emailAddress + '&rdquo;'
-     });
-   }, function (e) {
+   .then(message => res.render('result', { ...config, message }))
+   .catch(function (e) {
      res.render('result', {
        community: config.community,
        message: 'Failed! ' + e.message
      });
    });
 });
+
+function approveInvitation(invitation) {
+  return sendInvitation(invitation)
+    .then(() => 'Approved! An invitation has been sent to &ldquo;' + invitation.emailAddress + '&rdquo;');
+};
+
+function rejectInvitation(invitation) {
+  return DB.removeInvite(token).then(() => 'The request has been deleted');
+};
 
 function sendInvitation(invitation) {
   return new Promise((resolve, reject) => {
@@ -119,41 +129,60 @@ function sendInvitation(invitation) {
 router.post('/invite', function(req, res) {
   if (req.body.email && (!config.inviteToken || (!!config.inviteToken && req.body.token === config.inviteToken))) {
     function doInvite() {
-      inviteUser(req.body.email, function(err, body) {
-          if (err) { return res.send('Error:' + err); }
-          // body looks like:
-          //   {"ok":true}
-          //       or
-          //   {"ok":false,"error":"already_invited"}
-          if (body.ok) {
-            res.render('result', {
-              community: config.community,
-              message: 'Success! Check &ldquo;'+ req.body.email +'&rdquo; for an invite from Slack.'
-            });
-          } else {
-            let error = body.error;
-            let message = error;
-            let isFailed = true;
-            if (error === 'already_invited' || error === 'already_in_team') {
+      const options = {
+        url: 'https://' + config.slackUrl + '/api/users.lookupByEmail',
+        qs: { token: config.slacktoken, email: req.body.email }
+      };
+      request.get(options, function (e, _r, body) {
+        if (e) return res.send('Error: ' + e);
+
+        let data = JSON.parse(body);
+
+        if (data.ok && !data.error) {
+          return res.render('result', {
+            community: config.community,
+            message: 'You are already a member!'
+          });
+        } else if (data.error !== 'users_not_found') {
+          return res.send('Error: ' + data.error);
+        } else {
+          inviteUser(req.body.email, function(err, body) {
+            if (err) { return res.send('Error:' + err); }
+            // body looks like:
+            //   {"ok":true}
+            //       or
+            //   {"ok":false,"error":"already_invited"}
+            if (body.ok) {
               res.render('result', {
                 community: config.community,
-                message: 'Success! You were already invited.<br>' +
-                        'Visit <a href="https://'+ config.slackUrl +'">'+ config.community +'</a>'
+                message: 'Success! Check &ldquo;'+ req.body.email +'&rdquo; for an invite from Slack.'
               });
-              return;
-            } else if (error === 'invalid_email') {
-              message = 'Failed: The email you entered is an invalid email.';
-            } else if (error === 'approval_needed') {
-              message = 'Your invitation is waiting to be approved.';
-              isFailed = false;
-            } else if (error === 'invalid_auth') {
-              DB.logger.error(body);
-              message = 'Error: Something has gone wrong. Please contact a system administrator.';
-            }
+            } else {
+              let error = body.error;
+              let message = error;
+              let isFailed = true;
+              if (error === 'already_invited' || error === 'already_in_team') {
+                res.render('result', {
+                  community: config.community,
+                  message: 'Success! You were already invited.<br>' +
+                          'Visit <a href="https://'+ config.slackUrl +'">'+ config.community +'</a>'
+                });
+                return;
+              } else if (error === 'invalid_email') {
+                message = 'Failed: The email you entered is an invalid email.';
+              } else if (error === 'approval_needed') {
+                message = 'Your invitation is waiting to be approved.';
+                isFailed = false;
+              } else if (error === 'invalid_auth') {
+                DB.logger.error(body);
+                message = 'Error: Something has gone wrong. Please contact a system administrator.';
+              }
 
-            res.render('result', { ...config, message, isFailed });
-          }
-        });
+              res.render('result', { ...config, message, isFailed });
+            }
+          });
+        }
+      });
     }
     if (!!config.recaptchaSiteKey && !!config.recaptchaSecretKey) {
       request.post({

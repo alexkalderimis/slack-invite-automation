@@ -27,35 +27,37 @@ if (pool) {
 }
 
 function createTables(client) {
-  const queryText =
-    `
-    CREATE TABLE IF NOT EXISTS invitations (
+  const queries = [
+    `CREATE TABLE IF NOT EXISTS invitations (
       id UUID PRIMARY KEY,
       email_address TEXT NOT NULL
-    );
+    )`,
+    `CREATE UNIQUE INDEX
+      IF NOT EXISTS unique_invitations_email_address
+      ON invitations ((lower(email_address)))`,
+    `CREATE UNIQUE INDEX
+      IF NOT EXISTS unique_invitations_email_address_id
+      ON invitations (email_address, id)`,
+  ]
 
-    CREATE UNIQUE INDEX IF NOT EXISTS
-      unique_invitations_email_address
-      ON invitations ((lower(email_address)));
+  let run = (p, q) => p.then(res => {
+    logger.info(res);
+    logger.info(`Running: ${q}`);
+    return client.query(q);
+  });
 
-    CREATE UNIQUE INDEX IF NOT EXISTS 
-      unique_invitations_id
-      ON invitations (id);
+  logger.info('Setting up tables');
 
-    CREATE UNIQUE INDEX IF NOT EXISTS 
-      unique_invitations_email_address_id
-      ON invitations (email_address, id);
-    `;
+  let res = queries.reduce(run, Promise.resolve());
 
-  return client.query(queryText)
+  return res
     .then((res) => {
       client.release();
-      console.log(res);
+      logger.info(res);
     })
     .catch((err) => {
       client.release();
       logger.error(err);
-      process.exit(1);
     });
 }
 
