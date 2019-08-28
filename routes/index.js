@@ -8,19 +8,25 @@ const DB = require('../db');
 const Approve = require('../approve');
 
 const sanitize = require('sanitize');
+const approvalNeeded = !!config.approvalMechanism;
 
 router.get('/', function(req, res) {
   res.setLocale(config.locale);
   res.render('index', { community: config.community,
+                        approvalNeeded: approvalNeeded,
                         tokenRequired: !!config.inviteToken,
                         recaptchaSiteKey: config.recaptchaSiteKey });
 });
 
-const approvalNeeded = !!config.approvalMechanism;
-
 function inviteUser(emailAddress, cb, token) {
   if (!token && approvalNeeded) {
-    return DB.storeEmailAddress(emailAddress)
+    return DB.findInviteByEmailAddress(emailAddress)
+      .then(invite => {
+        if (invite) {
+          return Promise.reject('Invitation is still pending');
+        } else {
+          return DB.storeEmailAddress(emailAddress);
+      })
       .then(Approve.sendMessageToApprover)
       .then(function () {
         cb(null, { ok: false, error: 'approval_needed' });

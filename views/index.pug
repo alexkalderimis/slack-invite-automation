@@ -13,6 +13,8 @@ html
           h1
             strong #{community}
           h2 #{__('HEADER', community)}
+          if approvalNeeded
+            p #{__('GDPR_CONSENT_NOTICE')}
         .content
           .information
             form(method="POST", action="invite")#join-form.form
