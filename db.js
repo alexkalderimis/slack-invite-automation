@@ -28,7 +28,24 @@ if (pool) {
 
 function createTables(client) {
   const queryText =
-    'CREATE TABLE IF NOT EXISTS invitations (id UUID PRIMARY KEY, email_address TEXT NOT NULL)';
+    `
+    CREATE TABLE IF NOT EXISTS invitations (
+      id UUID PRIMARY KEY,
+      email_address TEXT NOT NULL
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS
+      unique_invitations_email_address
+      ON invitations ((lower(email_address)));
+
+    CREATE UNIQUE INDEX IF NOT EXISTS 
+      unique_invitations_id
+      ON invitations (id);
+
+    CREATE UNIQUE INDEX IF NOT EXISTS 
+      unique_invitations_email_address_id
+      ON invitations (email_address, id);
+    `;
 
   return client.query(queryText)
     .then((res) => {
@@ -38,6 +55,7 @@ function createTables(client) {
     .catch((err) => {
       client.release();
       logger.error(err);
+      process.exit(1);
     });
 }
 
@@ -52,8 +70,23 @@ function storeEmailAddress(emailAddress) {
       });
 };
 
+function findInviteByEmailAddress(email_address) {
+  const sql = `
+     SELECT id AS token, email_address FROM invitations
+     WHERE lower(email_address) = lower($1)
+     LIMIT 1
+  `;
+  const values = [email_address];
+
+  return pool.query(sql, values).then(res => res.rows[0]);
+};
+
 function findInvite(token) {
-  const sql = `SELECT id AS token, email_address FROM invitations WHERE id = $1 LIMIT 1`;
+  const sql = `
+    SELECT id AS token, email_address FROM invitations
+    WHERE id = $1
+    LIMIT 1
+  `;
   const values = [token];
 
   return pool.query(sql, values).then(res => res.rows[0]);
