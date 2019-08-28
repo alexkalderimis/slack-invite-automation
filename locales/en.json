@@ -1,7 +1,9 @@
 {
   "HEADER": "Enter your email below to join %s on Slack!",
+  "HEADER_WITH_APPROVAL": "Enter your email below to request to join %s on Slack!",
   "ENTER_EMAIL": "Enter Your Email Address",
   "ENTER_TOKEN": "Enter the invite token you were given",
   "TITLE": "Join the %s community on Slack!",
-  "APPROVE": "Press the button below to add %s to your community on Slack"
+  "APPROVE": "Press the button below to add %s to your community on Slack",
+  "GDPR_CONSENT_NOTICE": "We will store your email until your invitation is approved"
 }
