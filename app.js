@@ -5,8 +5,11 @@ const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const i18n = require("i18n");
+const expressWinston = require('express-winston');
+const winston = require('winston')
 
 const config = require('./config');
+const { transports } = require('./logger');
 
 const routes = require('./routes/index');
 
@@ -29,7 +32,20 @@ app.set('view engine', 'pug');
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(__dirname + '/public/favicon.ico'));
-app.use(logger('dev'));
+
+if (config.env === 'dev') {
+  app.use(logger('dev'));
+} else {
+  app.use(expressWinston.logger({
+      transports: transports,
+      format: winston.format.json(),
+      meta: true, // optional: control whether you want to log the meta data about the request (default to true)
+      msg: "HTTP {{req.method}} {{req.url}}", // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
+      expressFormat: true, // Use the default Express/morgan request formatting. Enabling this will override any msg if true. Will only output colors with colorize set to true
+      colorize: false,
+    }));
+}
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());

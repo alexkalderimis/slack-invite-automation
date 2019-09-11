@@ -7,5 +7,5 @@ const myWinstonOptions = {
 const logger = new winston.createLogger(myWinstonOptions)
 
 module.exports = {
-  logger,
+  logger, transports: myWinstonOptions.transports
 };
