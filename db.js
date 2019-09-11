@@ -102,5 +102,5 @@ function removeInvite(token) {
 };
 
 module.exports = {
-  logger, storeEmailAddress, findInvite, removeInvite, createTables
+  logger, storeEmailAddress, findInvite, removeInvite, createTables, findInviteByEmailAddress,
 };
