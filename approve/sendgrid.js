@@ -1,4 +1,5 @@
 const config = require('../config')
+const { logger } = require('../logger')
 
 const sgMail = require('@sendgrid/mail');
 
@@ -20,6 +21,7 @@ function sendMessageToApprover(invitation) {
     subject, text, html,
   };
   // const mail = new sendgrid.mail.Mail(from_email, subject, to_email, content);
+  logger.info({event: 'sendMail', mail: mail});
   return sgMail.send(mail);
 };
 
