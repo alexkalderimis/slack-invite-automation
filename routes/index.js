@@ -3,6 +3,7 @@ const router = express.Router();
 const request = require('request');
 
 const config = require('../config');
+const { logger }  = require('../logger');
 const { badge } = require('../lib/badge');
 const DB = require('../db');
 const Approve = require('../approve');
@@ -32,14 +33,15 @@ function inviteUser(emailAddress, cb, token) {
       .then(function () {
         cb(null, { ok: false, error: 'approval_needed' });
       }, function(e) {
+        logger.error(e);
         cb(e, null);
       });
   } else {
     if (token) {
       DB.removeInvite(token).then(() => {
-        DB.logger.info(`removed invitation for ${emailAddress}`)
+        logger.info(`removed invitation for ${emailAddress}`)
       }, (e) => {
-        DB.logger.error(`error removing invitation for ${emailAddress}`);
+        logger.error(`error removing invitation for ${emailAddress}`);
       });
     }
     const options = {
@@ -174,7 +176,7 @@ router.post('/invite', function(req, res) {
                 message = 'Your invitation is waiting to be approved.';
                 isFailed = false;
               } else if (error === 'invalid_auth') {
-                DB.logger.error(body);
+                logger.error(body);
                 message = 'Error: Something has gone wrong. Please contact a system administrator.';
               }
 

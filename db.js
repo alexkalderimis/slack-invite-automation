@@ -1,14 +1,8 @@
 const config = require('./config');
+const { logger }  = require('./logger');
 
-const winston = require('winston')
 const uuidv4 = require('uuid/v4');
 const { Pool } = require('pg');
-
-const myWinstonOptions = {
-    transports: [new winston.transports.Console()]
-}
-
-const logger = new winston.createLogger(myWinstonOptions)
 
 const pool = config.db.connectionString && new Pool(config.db);
 
@@ -102,5 +96,5 @@ function removeInvite(token) {
 };
 
 module.exports = {
-  logger, storeEmailAddress, findInvite, removeInvite, createTables, findInviteByEmailAddress,
+  storeEmailAddress, findInvite, removeInvite, createTables, findInviteByEmailAddress,
 };
