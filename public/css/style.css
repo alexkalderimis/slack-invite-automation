@@ -129,10 +129,8 @@ outline: none;
 }
 
 .submit{
-position: absolute;
-right: 15px;
-top: 13px;
 padding: 3px 10px;
+margin: 3px 10px;
 -webkit-border-radius: 30px;-moz-border-radius: 30px;border-radius: 30px;
 background: #ffffff;
 border: none;
