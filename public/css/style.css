@@ -171,6 +171,14 @@ a:hover {
 .content table td {
   padding: 0.25em 0.5em;
 }
+.pending td.email {
+  font-family: monospace;
+}
 .content table td a {
   color: #221c3c;
+}
+
+.pending .content {
+  background: #fefefe;
+  padding: 1em;
 }
