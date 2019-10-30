@@ -40,8 +40,14 @@ function inviteUser(emailAddress, cb, token) {
   if (!token && approvalNeeded) {
     return DB.findInviteByEmailAddress(emailAddress)
       .then(invite => {
-        if (invite) {
+        if (invite && invite.state === DB.PENDING) {
           return Promise.reject('Invitation is still pending');
+        } else if (invite && invite.state === DB.ACCEPTED) {
+          return Promise.reject('Invitation has already been accepted');
+        } else if (invite && invite.state === DB.REJECTED) {
+          return Promise.reject('Invitation has already been rejected');
+        } else if (invite) {
+          return Promise.reject(new Error('Unknown invitation state'));
         } else {
           return DB.storeEmailAddress(emailAddress);
         }
@@ -55,10 +61,10 @@ function inviteUser(emailAddress, cb, token) {
       });
   } else {
     if (token) {
-      DB.removeInvite(token).then(() => {
-        logger.info(`removed invitation for ${emailAddress}`)
+      DB.markAccepted(token).then(() => {
+        logger.info(`accepted invitation for ${emailAddress}`)
       }, (e) => {
-        logger.error(`error removing invitation for ${emailAddress}`);
+        logger.error(`error accepting invitation for ${emailAddress}: ${e}`);
       });
     }
     const options = {
@@ -106,7 +112,10 @@ router.post('/approve/:token', function(req, res) {
        return rejectInvitation(invitation);
      }
    })
-   .then(message => res.render('result', { ...config, message }))
+   .then(message => {
+     logger.info(message);
+     return res.redirect(302, `/pending/${config.adminToken}`);
+   })
    .catch(function (e) {
      res.render('result', {
        community: config.community,
@@ -121,7 +130,8 @@ function approveInvitation(invitation) {
 };
 
 function rejectInvitation(invitation) {
-  return DB.removeInvite(invitation.token).then(() => 'The request has been deleted');
+  return DB.markRejected(invitation.token)
+    .then(() => 'The request has been rejected');
 };
 
 function sendInvitation(invitation) {
