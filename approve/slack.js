@@ -5,7 +5,8 @@ const { approvalLink } = require('./common');
 
 function sendMessageToApprover(invitation) {
   const options = {
-    url: 'https://'+ config.slackUrl + '/api/chat.postMessage',
+    // requires: chat:write:bot
+    url: `https://${config.slackUrl}/api/chat.postMessage`,
     form: {
       channel: config.approval.slackChannel,
       text: `${invitation.emailAddress} wants to join ${config.community}`,
