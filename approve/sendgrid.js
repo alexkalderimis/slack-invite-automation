@@ -16,8 +16,8 @@ function sendMessageToApprover(invitation) {
   const text = getText(invitation);
   // const content = new sendgrid.mail.Content('text/html', html);
   const mail = {
-    to: { email: config.email.from },
-    from: { email: config.approver },
+    from: { email: config.email.from },
+    to: { email: config.approver },
     subject, text, html,
   };
   // const mail = new sendgrid.mail.Mail(from_email, subject, to_email, content);
