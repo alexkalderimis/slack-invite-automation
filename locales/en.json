@@ -8,6 +8,6 @@
   "GDPR_CONSENT_NOTICE": "We will store your email until your invitation is approved",
   "PENDING_INVITES": "Pending invitations",
   "PENDING_EMAIL": "Email address",
-  "PENDING_APPROVAL_LINK": "",
+  "PENDING_APPROVAL_LINK": " ",
   "MANAGE_INVITE": "Click here to respond"
 }

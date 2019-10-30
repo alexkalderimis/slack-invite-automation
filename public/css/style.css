@@ -182,3 +182,7 @@ a:hover {
   background: #fefefe;
   padding: 1em;
 }
+
+.pending thead {
+  border-bottom: 1px solid #cecece;
+}
