@@ -104,7 +104,7 @@ function approveInvitation(invitation) {
 };
 
 function rejectInvitation(invitation) {
-  return DB.removeInvite(token).then(() => 'The request has been deleted');
+  return DB.removeInvite(invitation.token).then(() => 'The request has been deleted');
 };
 
 function sendInvitation(invitation) {
