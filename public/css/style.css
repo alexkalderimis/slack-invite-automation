@@ -164,3 +164,13 @@ a:hover {
 .g-recaptcha, .g-recaptcha > div {
   margin: auto;
 }
+
+.content table th {
+  font-weight: bold;
+}
+.content table td {
+  padding: 0.25em 0.5em;
+}
+.content table td a {
+  color: #221c3c;
+}

@@ -77,6 +77,15 @@ function findInviteByEmailAddress(email_address) {
   return pool.query(sql, values).then(res => res.rows[0]);
 };
 
+function findPendingInvites() {
+  const sql = `
+     SELECT id AS token, email_address FROM invitations
+     ORDER BY email_address
+  `;
+  const values = [];
+  return pool.query(sql, values).then(res => res.rows);
+};
+
 function findInvite(token) {
   const sql = `
     SELECT id AS token, email_address FROM invitations
@@ -95,6 +104,7 @@ function removeInvite(token) {
   return pool.query(sql, values);
 };
 
+
 module.exports = {
-  storeEmailAddress, findInvite, removeInvite, createTables, findInviteByEmailAddress,
+  storeEmailAddress, findPendingInvites, findInvite, removeInvite, createTables, findInviteByEmailAddress,
 };

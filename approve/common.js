@@ -1,5 +1,7 @@
 const config = require('../config');
 
+const pendingInvitationsLink = `${config.baseURL}/pending/${config.adminToken}`;
+
 function getText(invitation) {
   const text = `
     New request to join ${config.community}
@@ -10,6 +12,10 @@ function getText(invitation) {
     approve this request, pease click on the link below:
 
     ${approvalLink(invitation)}
+
+    View all pending invitations at the link below:
+
+    ${pendingInvitationsLink}
 
     Your friendly slack bot!
   `;
@@ -29,6 +35,8 @@ function getBody(invitation) {
     <a class="approval-link" href="${approvalLink(invitation)}">
       Invite ${invitation.emailAddress} to join ${config.community}
     </a>
+
+    <a href="${pendingInvitationsLink}">See all pending invitations</a>
   `;
 
   return html;

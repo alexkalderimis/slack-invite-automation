@@ -5,5 +5,9 @@
   "ENTER_TOKEN": "Enter the invite token you were given",
   "TITLE": "Join the %s community on Slack!",
   "APPROVE": "Press the button below to add %s to your community on Slack",
-  "GDPR_CONSENT_NOTICE": "We will store your email until your invitation is approved"
+  "GDPR_CONSENT_NOTICE": "We will store your email until your invitation is approved",
+  "PENDING_INVITES": "Pending invitations",
+  "PENDING_EMAIL": "Email address",
+  "PENDING_APPROVAL_LINK": "",
+  "MANAGE_INVITE": "Click here to respond"
 }

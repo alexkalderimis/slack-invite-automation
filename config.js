@@ -5,6 +5,7 @@ dotenv.config();
 
 module.exports = {
   env: process.env.ENV || 'prod',
+  adminToken: process.env.ADMIN_TOKEN || 'admin',
   // your community or team name to display on join page.
   community: process.env.COMMUNITY_NAME || 'YOUR-TEAM-NAME',
   // your slack team url (ex: socketio.slack.com)
