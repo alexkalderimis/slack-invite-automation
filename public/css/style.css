@@ -38,6 +38,10 @@ float: left;
 	margin-bottom: 40px;
 }
 
+.header p {
+  margin-top: 1em;
+  text-align: center;
+}
 
 h1{
 font-family: 'Open Sans', sans-serif;
