@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+
+// support for .env file to get loaded in to environment variables.
+const path = require('path');
+const fs = require('fs');
+const envFile = path.join(__dirname, '../.env');
+try {
+  fs.accessSync(envFile, fs.F_OK);
+  require('dotenv').config({path: envFile});
+} catch (e) {
+  // no env file
+}
+
+const DB = require('../db');
+
+DB.initDB().then(DB.closeDB).then(() => {
+  console.log('DB initialized');
+
+  process.exit(0);
+}).catch(e => {
+  console.error('Error closing DB');
+
+  process.exit(1);
+});

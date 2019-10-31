@@ -10,16 +10,23 @@ const pool = config.db.connectionString && new Pool(config.db);
 
 if (pool) {
   pool.on('connect', () => {
-    logger.info('Connected to database established');
+    logger.info('Connection to database established');
   });
   pool.on('error', (err, client) => {
     logger.error('Unexpected error on idle client', err)
     process.exit(-1)
   });
-  pool.connect().then(createTables).then(migrate).catch(e => {
+}
+
+function initDB() {
+  return pool.connect().then(createTables).then(migrate).catch(e => {
     logger.error({error: `${e}`, message: 'Could not initialize DB'});
     process.exit(1);
   });
+}
+
+function closeDB() {
+  return pool.end();
 }
 
 const STATES = ['PENDING', 'ACCEPTED', 'REJECTED'];
@@ -198,7 +205,7 @@ function removeInvite(token) {
 
 module.exports = {
   STATES, PENDING, ACCEPTED, REJECTED,
-  migrate, createTables,
+  migrate, createTables, initDB, closeDB,
   storeEmailAddress, findPendingInvites, removeInvite,
   findInviteByEmailAddress, findInvite,
   markRejected, markAccepted,
