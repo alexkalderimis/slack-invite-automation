@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const i18n = require("i18n");
 const expressWinston = require('express-winston');
 const winston = require('winston')
+const Sentry = require('@sentry/node');
 
 const config = require('./config');
 const { transports } = require('./logger');
@@ -14,6 +15,11 @@ const { transports } = require('./logger');
 const routes = require('./routes');
 
 const app = express();
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN });
+  app.use(Sentry.Handlers.requestHandler());
+}
 
 i18n.configure({
     defaultLocale: "en",
@@ -53,6 +59,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(config.subpath, routes);
 
+
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
     const err = new Error('Not Found');
@@ -61,6 +68,13 @@ app.use(function(req, res, next) {
 });
 
 // error handlers
+
+if (process.env.SENTRY_DSN) {
+  app.get('/debug-sentry', function mainHandler(req, res) {
+    throw new Error('My first Sentry error!');
+  });
+  app.use(Sentry.Handlers.errorHandler());
+}
 
 // development error handler
 // will print stacktrace
