@@ -11,7 +11,7 @@ const winston = require('winston')
 const config = require('./config');
 const { transports } = require('./logger');
 
-const routes = require('./routes/index');
+const routes = require('./routes');
 
 const app = express();
 
