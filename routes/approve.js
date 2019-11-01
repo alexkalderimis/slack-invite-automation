@@ -3,7 +3,7 @@ const config = require('../config');
 const router = require('../router');
 
 const { logger }  = require('../logger');
-const { inviteUser } = require('./invite');
+const Invite = require('../lib/invite');
 
 router.get('/approve/:token', function(req, res) {
   DB.findInvite(req.params.token).then(invitation => {
@@ -34,7 +34,8 @@ router.post('/approve/:token', function(req, res) {
    .catch(function (e) {
      res.render('result', {
        community: config.community,
-       message: 'Failed! ' + e.message
+       isFailed: true,
+       message: String(e)
      });
    });
 });
@@ -50,23 +51,20 @@ function rejectInvitation(invitation) {
 };
 
 function sendInvitation(invitation) {
-  return new Promise((resolve, reject) => {
-    const cb = (err, response) => {
-      if (err) return reject(err);
+  return Invite.sendInvitation(invitation).then(response => {
+    if (response.ok) return Promise.resolve(invitation);
 
-      if (response.ok) return resolve(invitation);
-
-      if (response.error === 'already_invited' || response.error === 'already_in_team') {
-        return reject(new Error('This user has already been invited'));
-      } else if (response.error === 'invalid_email') {
-        return reject(new Error('The email address is invalid'));
-      } else if (response.error === 'invalid_auth') {
-        return reject(new Error('The request was not authorised. Please check your configuration settings'));
-      } else { 
-        return reject(new Error(response.error));
-      }
-    };
-    inviteUser(invitation.email_address, cb, invitation.token);
+    switch (response.error) {
+      case 'already_invited':
+      case 'already_in_team':
+        return Promise.reject('This user has already been invited');
+      case 'invalid_email':
+        return Promise.reject('The email address is invalid');
+      case 'invalid_auth':
+        return Promise.reject('The request was not authorised. Please check your configuration settings');
+      default:
+        return Promise.reject(response.error);
+    }
   });
 };
 

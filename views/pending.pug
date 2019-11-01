@@ -23,4 +23,9 @@ html
                 tr
                   td.email #{invite.email_address}
                   td
-                    a(href=approvalLink(invite)) #{__('MANAGE_INVITE')}
+                    form(method="POST")#approve-form.form
+                      input(type='hidden', name='invite_token', value=invite.token)
+                      input(type='submit', name='action', value='ACCEPT').submit
+                      input(type='submit', name='action', value='MARK_ACCEPTED').submit
+                      input(type='submit', name='action', value='MARK_REJECTED').submit
+                      input(type='submit', name='action', value='DELETE').submit
