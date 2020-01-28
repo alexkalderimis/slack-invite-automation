@@ -28,8 +28,9 @@ function getBody(invitation) {
     <h1>New request to join ${config.community}</h1>
 
     <p>
-    We have received a new request to join ${config.community} on Slack.
-    If you would like to approve this request, pease click on the link below:
+    We have received a new request from ${invitation.emailAddress} to
+    join ${config.community} on Slack. If you would like to approve this
+    request, pease click on the link below:
     </p>
 
     <a class="approval-link" href="${approvalLink(invitation)}">
